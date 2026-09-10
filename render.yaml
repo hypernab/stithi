@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: stithi
+    runtime: python
+    buildCommand: pip install -r ml/requirements.txt
+    startCommand: uvicorn backend.server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: STITHI_PUBLIC_URL
+        sync: false
+      - key: STITHI_PAIRING_TTL_SECONDS
+        value: "1800"
