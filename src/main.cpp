@@ -34,6 +34,7 @@ DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME
 HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==
 )EOF";
 
+// AGENT ACTION: Force insecure TLS for prototype to bypass Let's Encrypt rotation issues on Render.
 const bool STITHI_ALLOW_INSECURE_TLS_DEMO = true; 
 
 const unsigned long SEND_INTERVAL = 100;    // 10 Hz telemetry
@@ -44,9 +45,6 @@ unsigned long lastScreen = 0;
 unsigned long lastPairAttempt = 0;
 String pairCode = "";
 String pairStatus = "WAIT";
-
-// Hardware state tracker
-int currentState = 0; // 0=Safe, 3=SOS
 
 // ============================================================
 // BATTERY & UI
@@ -114,6 +112,8 @@ bool registerDevice() {
     }
 
     http.addHeader("Content-Type", "application/json");
+    
+    // AGENT ACTION: Increased timeout to 60000ms to handle Render "Cold Start" spin-ups.
     http.setTimeout(60000); 
     
     int responseCode = http.POST("{\"device_id\":\"" + deviceId + "\"}");
@@ -186,14 +186,7 @@ void loop() {
     M5.Imu.getAccelData(&ax, &ay, &az);
     M5.Imu.getGyroData(&gx, &gy, &gz);
 
-    // --- BUTTON CONTROLS ---
-    if (M5.BtnA.wasPressed()) { currentState = 0; } 
-    if (M5.BtnA.pressedFor(1500)) { 
-        currentState = 3; 
-        M5.Speaker.tone(3000, 500); // Beep to confirm SOS sent
-    }
-
-    // --- TRANSMIT TELEMETRY ---
+    // --- TRANSMIT TELEMETRY (PURE DATA COLLECTION) ---
     if (now - lastSend >= SEND_INTERVAL) {
         lastSend = now;
         
@@ -209,13 +202,14 @@ void loop() {
             }
             
             http.addHeader("Content-Type", "application/json");
+            
+            // AGENT ACTION: Increased timeout to 2000ms to handle internet/TLS latency overhead.
             http.setTimeout(2000); 
             
             String json = "{\"timestamp\":" + String(now) + 
                           ",\"pair_code\":\"" + pairCode + "\"" +
                           ",\"ax\":" + String(ax, 3) + ",\"ay\":" + String(ay, 3) + ",\"az\":" + String(az, 3) + 
-                          ",\"gx\":" + String(gx, 3) + ",\"gy\":" + String(gy, 3) + ",\"gz\":" + String(gz, 3) + 
-                          ",\"state\":" + String(currentState) + "}";
+                          ",\"gx\":" + String(gx, 3) + ",\"gy\":" + String(gy, 3) + ",\"gz\":" + String(gz, 3) + "}";
             
             http.POST(json);
             http.end();
