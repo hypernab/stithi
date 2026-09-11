@@ -1,266 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STITHI | Wearable Movement Support</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #0f172a; }
-        .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .hero { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 40px; margin-bottom: 24px; }
-        .chart-container { height: 250px; width: 100%; position: relative; }
-    </style>
-</head>
-<body class="p-8 max-w-7xl mx-auto">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STITHI | Movement support</title>
+<style>
+:root{--ink:#10231f;--muted:#61736e;--paper:#f4f1e9;--panel:#fffdf8;--line:#d9e1d8;--teal:#0b7568;--teal-dark:#07544d;--mint:#d9eee4;--gold:#d99a3d;--rose:#b85c50;--shadow:0 18px 45px rgba(16,35,31,.08)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 8% 0,#dceee3 0,transparent 32%),linear-gradient(135deg,#f4f1e9 0,#eef5f0 52%,#f8eee3 100%);color:var(--ink);font-family:Georgia,"Times New Roman",serif;line-height:1.45}.shell{max-width:1180px;margin:auto;padding:28px 22px 70px}.eyebrow,.label{font:700 11px/1.2 Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:var(--teal)}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:34px}.brand{font-size:clamp(2rem,5vw,3.5rem);line-height:1;margin:0;letter-spacing:.04em}.tagline{color:var(--muted);font-size:1.05rem;margin:.55rem 0 0}.status{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:999px;font:700 13px Arial,sans-serif;white-space:nowrap}.dot{width:9px;height:9px;border-radius:50%;background:#9baaa2}.connected .dot{background:#1d996e;box-shadow:0 0 0 4px #d9eee4}.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-bottom:18px}.panel{background:rgba(255,253,248,.86);border:1px solid rgba(217,225,216,.95);border-radius:14px;padding:26px;box-shadow:var(--shadow)}.hero h1{font-size:clamp(2rem,4vw,3.5rem);line-height:1.04;max-width:650px;margin:10px 0 12px}.hero p{max-width:650px;color:var(--muted);font-size:1.08rem}.hero-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:stretch}.metric{background:var(--mint);border-radius:10px;padding:18px}.metric strong{display:block;font-size:1.35rem;margin-top:6px}.section{margin-top:38px}.section-heading{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:14px}.section h2{font-size:clamp(1.55rem,3vw,2.25rem);margin:0}.section-heading p{color:var(--muted);margin:0;max-width:560px}.plan{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.routine{padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:205px;display:flex;flex-direction:column;transition: all 0.3s;}.routine .icon{font-size:2rem}.routine h3{font:700 15px Arial,sans-serif;letter-spacing:.06em;margin:17px 0 4px;color:var(--teal-dark)}.routine p,.video p{color:var(--muted);font-size:.95rem;margin:0}.routine footer{margin-top:auto;padding-top:16px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font:13px Arial,sans-serif}.button{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:var(--teal);color:#fff;padding:10px 14px;font:700 12px Arial,sans-serif;cursor:pointer;text-decoration:none}.button:hover{background:var(--teal-dark)}.quiet{background:transparent;color:var(--teal);border:1px solid var(--teal)}.feedback-grid,.video-grid,.research-grid,.roadmap{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.feedback{border-left:5px solid var(--teal);background:var(--panel);padding:20px;border-radius:0 10px 10px 0}.feedback.check{border-left-color:var(--gold)}.feedback h3{margin:0 0 7px;font:700 14px Arial,sans-serif;letter-spacing:.08em}.feedback p{margin:0;color:var(--muted)}.video{overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:12px}.video-frame{aspect-ratio:16/9;background:#d9e8df;display:flex;align-items:center;justify-content:center;padding:18px}.video-frame iframe{width:100%;height:100%;border:0}.video-frame a{color:var(--teal-dark);font:700 14px Arial,sans-serif;text-align:center}.video .copy{padding:17px}.video h3{margin:0 0 5px;font:700 14px Arial,sans-serif;letter-spacing:.08em;color:var(--teal-dark)}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}.steps{counter-reset:item;list-style:none;padding:0;margin:0}.steps li{counter-increment:item;display:flex;gap:12px;margin:12px 0;color:var(--muted)}.steps li:before{content:counter(item);display:grid;place-items:center;min-width:25px;height:25px;border-radius:50%;background:var(--mint);color:var(--teal-dark);font:700 13px Arial,sans-serif}.live-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:14px}.readings{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.reading{background:#f2f6f1;border-radius:8px;padding:13px}.reading b{display:block;font:700 12px Arial,sans-serif;color:var(--muted)}.reading strong{display:block;font-size:1.25rem;margin-top:5px}.state{display:inline-block;padding:7px 10px;border-radius:6px;background:var(--mint);font:700 12px Arial,sans-serif;color:var(--teal-dark)}.state.check{background:#f8e8c8;color:#805413}.chart{width:100%;height:190px;background:#f2f6f1;border-radius:8px;border:1px solid var(--line)}.research-grid{grid-template-columns:repeat(3,1fr)}.research strong{display:block;font-size:2rem;color:var(--teal-dark)}.research p{color:var(--muted);margin:.4rem 0 0}.pipeline{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pipeline span{background:var(--mint);padding:12px 14px;border-radius:7px;font:700 12px Arial,sans-serif;color:var(--teal-dark)}.pipeline i{color:var(--gold);font-style:normal;font-size:1.3rem}.roadmap{grid-template-columns:repeat(4,1fr)}.roadmap article{border-top:4px solid var(--teal);padding-top:14px}.roadmap article:nth-child(2){border-color:var(--gold)}.roadmap article:nth-child(3){border-color:#b85c50}.roadmap article:nth-child(4){border-color:#6c7fbd}.roadmap h3{font:700 12px Arial,sans-serif;letter-spacing:.08em}.roadmap p{color:var(--muted)}.disclaimer{color:var(--muted);font-size:.9rem}.developer{background:#172923;color:#f0f5ef}.developer .label,.developer h2{color:#d9eee4}.developer .disclaimer,.developer .reading b{color:#adc5b8}.developer .reading{background:#233b32}.developer .state{background:#d9eee4}.controls{display:flex;flex-wrap:wrap;gap:8px}.footer{text-align:center;color:var(--muted);font:12px Arial,sans-serif;margin-top:45px}
+/* Completed Otago Badge CSS */
+.routine.completed { background: #d9eee4; border-color: #0b7568; }
+.routine.completed h3 { color: #07544d; }
+@media(max-width:850px){.hero,.two-col,.live-grid{grid-template-columns:1fr}.plan,.roadmap{grid-template-columns:repeat(2,1fr)}.video-grid,.feedback-grid,.research-grid{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}@media(max-width:520px){.shell{padding:20px 14px 50px}.panel{padding:19px}.plan,.roadmap,.readings{grid-template-columns:1fr}.hero-metrics{grid-template-columns:1fr 1fr}.section-heading{display:block}.section-heading p{margin-top:5px}.pipeline span{flex:1;text-align:center}}
+/* Calm blue-black presentation theme */
+:root{--ink:#e7eef7;--muted:#9eafc2;--paper:#07111f;--panel:#0d1b2b;--line:#203751;--teal:#64b5d1;--teal-dark:#b7e5f2;--mint:#123247;--gold:#d8ae62;--rose:#df8178;--shadow:0 18px 45px rgba(0,0,0,.24)}
+body{background:radial-gradient(circle at 12% 0,#173a52 0,transparent 34%),linear-gradient(135deg,#07111f 0,#0a1728 55%,#111b2b 100%);color:var(--ink)}
+.hero{grid-template-columns:1fr}.hero-metrics{display:none}.panel,.routine,.video{background:rgba(13,27,43,.92);border-color:var(--line)}.status{background:#0d1b2b;border-color:var(--line)}.connected .dot{background:#67c7a1;box-shadow:0 0 0 4px #123c3d}.metric,.feedback,.reading{background:#10283b}.video-frame,.chart{background:#0a1929;border-color:var(--line)}.developer{background:#050d17;color:var(--ink)}.developer .reading{background:#0c1c2b}.developer .disclaimer,.developer .reading b{color:var(--muted)}
+.axis-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.axis-chart{min-width:0}.axis-chart h3{font:700 12px Arial,sans-serif;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}.axis-chart canvas{height:190px}@media(max-width:700px){.axis-charts{grid-template-columns:1fr}}
+body{font-family:"Avenir Next","Trebuchet MS","Segoe UI",sans-serif;font-size:15px}.eyebrow,.label,.status,.button,.routine h3,.video h3,.axis-chart h3{font-family:"Avenir Next","Trebuchet MS","Segoe UI",sans-serif}.section:not(.developer){margin-top:27px}.section:not(.developer) h2{font-size:clamp(1.35rem,2.4vw,1.85rem)}.section:not(.developer) .section-heading{margin-bottom:10px}.routine{padding:16px;min-height:175px}.routine h3{margin-top:12px}.video .copy{padding:14px}.video-frame{min-height:145px}.two-col .panel{padding:20px}.disclaimer{font-size:.82rem}
+.video-thumb{display:block;position:relative;width:100%;height:100%;min-height:145px;color:#fff;text-decoration:none;overflow:hidden}.video-thumb img{display:block;width:100%;height:100%;min-height:145px;object-fit:cover;opacity:.78;transition:opacity .2s}.video-thumb:hover img{opacity:1}.video-thumb span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:rgba(7,17,31,.82);color:#fff;font:700 20px Arial,sans-serif}.video-thumb small{position:absolute;left:12px;bottom:10px;color:#fff;font:600 12px "Avenir Next","Trebuchet MS",sans-serif;text-shadow:0 1px 3px #000}
+.intensity-chart{padding:14px 14px 12px;background:#f7fafc;border:1px solid var(--line);border-radius:8px}.intensity-chart h3{margin:0 0 9px;font:700 12px Arial,sans-serif;letter-spacing:.08em;color:var(--muted)}.intensity-blocks{display:grid;grid-template-columns:repeat(20,1fr);gap:3px}.intensity-block{height:18px;border-radius:2px;background:#dce8ef;transition:background .2s}
+/* Light dashboard surfaces */
+:root{--ink:#172b3a;--muted:#637482;--paper:#ffffff;--panel:#ffffff;--line:#d9e3ea;--teal:#167a96;--teal-dark:#0d5268;--mint:#e8f4f7;--gold:#b57b22;--rose:#b95252;--shadow:0 12px 30px rgba(31,58,76,.08)}
+body{background:#ffffff;color:var(--ink)}.panel,.routine,.video{background:#ffffff;border-color:var(--line);box-shadow:var(--shadow)}.status{background:#ffffff;border-color:var(--line)}.metric,.feedback,.reading{background:#f5fafc}.video-frame,.chart{background:#f7fafc;border-color:var(--line)}.developer{background:#ffffff;color:var(--ink)}.developer .reading{background:#f5fafc}.developer .disclaimer,.developer .reading b{color:var(--muted)}.pipeline span{background:var(--mint);color:var(--teal-dark)}
+</style>
+</head> 
+<body>
+<main class="shell">
+<header class="topbar"><div><div class="eyebrow">Wearable movement support · SIH1580</div><h1 class="brand">STITHI</h1><p class="tagline">Sense. Understand. Support.</p></div><div id="connection" class="status"><span class="dot"></span><span>Waiting for M5Stick</span></div></header>
+<section class="hero"><div class="panel"><div class="eyebrow">A calmer way to understand movement</div><h1>Small signals can support stronger everyday confidence.</h1><p>STITHI combines a wearable sensor, movement recognition, personal baseline comparison and prevention education in one research prototype.</p><p class="disclaimer">This is an experimental movement-monitoring platform, not a medical diagnosis or future-fall prediction.</p></div><div class="hero-metrics"><div class="metric"><span class="label">Current activity</span><strong id="activityValue">Waiting</strong></div><div class="metric"><span class="label">AI confidence</span><strong id="confidenceValue">--</strong></div><div class="metric"><span class="label">Device battery</span><strong id="batteryValue">Not reported</strong></div><div class="metric"><span class="label">Samples received</span><strong id="samplesValue">0</strong></div></div></section>
+<section class="section"><div class="section-heading"><div><div class="eyebrow">Daily support</div><h2>TODAY'S PREVENTION PLAN</h2></div><p>Simple movement. Consistent practice. Better confidence.</p></div><div class="plan"><article id="routine-mobility" class="routine"><div class="icon">◌</div><h3>MOBILITY</h3><p>Gentle movement and warm-up.</p><footer><span id="mobility-time">5–10 min</span><a class="button quiet" href="#videos">Learn</a></footer></article><article class="routine"><div class="icon">✦</div><h3>STRENGTH</h3><p>Lower-body strengthening education.</p><footer><span>10–15 min</span><a class="button quiet" href="#videos">Watch</a></footer></article><article class="routine"><div class="icon">△</div><h3>BALANCE</h3><p>Controlled balance and stable movement.</p><footer><span>5–10 min</span><a class="button quiet" href="#videos">Watch</a></footer></article><article class="routine"><div class="icon">→</div><h3>MOVEMENT</h3><p>Safe everyday walking and mobility.</p><footer><span>10–20 min</span><a class="button quiet" href="#videos">Learn</a></footer></article></div><p class="disclaimer">Suggested prevention routine. Choose educational material appropriate for your abilities and discuss concerns with a qualified professional.</p></section>
+<section class="section"><div class="section-heading"><div><div class="eyebrow">Live interpretation</div><h2>PREVENTIVE FEEDBACK</h2></div><p>Experimental indicators help make movement changes easier to notice.</p></div><div class="feedback-grid"><article class="feedback"><h3 id="movementState">MOVEMENT · WAITING</h3><p id="movementCopy">Waiting for recent wearable telemetry.</p></article><article class="feedback"><h3 id="stabilityState">STABILITY · WAITING</h3><p id="stabilityCopy">No movement signal has arrived yet.</p></article><article class="feedback"><h3 id="baselineState">PERSONAL BASELINE · NOT READY</h3><p id="baselineCopy">A baseline helps STITHI understand usual movement patterns.</p><button class="button" onclick="startBaseline()">Start Baseline</button></article></div></section>
+<section id="videos" class="section"><div class="section-heading"><div><div class="eyebrow">Educational movement guide</div><h2>MOVE WITH MORE CONFIDENCE</h2></div><p>Authoritative prevention material, kept separate from the AI activity result.</p></div><div class="video-grid"><article class="video"><div class="video-frame" data-video="mobility"><a href="https://www.youtube.com/results?search_query=Otago+Exercise+Programme+official+mobility" target="_blank" rel="noreferrer">Watch official mobility material on YouTube ↗</a></div><div class="copy"><h3>MOBILITY</h3><p>Gentle movement to prepare the body for activity.</p></div></article><article class="video"><div class="video-frame" data-video="strength"><a href="https://www.youtube.com/results?search_query=Otago+Exercise+Programme+official+strength" target="_blank" rel="noreferrer">Watch official strength material on YouTube ↗</a></div><div class="copy"><h3>STRENGTH</h3><p>Build lower-body strength and functional confidence.</p></div></article><article class="video"><div class="video-frame" data-video="balance"><a href="https://www.youtube.com/results?search_query=Otago+Exercise+Programme+official+balance" target="_blank" rel="noreferrer">Watch official balance material on YouTube ↗</a></div><div class="copy"><h3>BALANCE</h3><p>Practice controlled balance and stable movement.</p></div></article></div></section>
+<section class="section two-col"><article class="panel"><div class="eyebrow">Awareness</div><h2>WHY MOVEMENT MATTERS</h2><p>Falls can affect independence and confidence. Regular strength, balance and mobility activities can support healthy ageing and fall prevention.</p><h3>WHEN STITHI FLAGS A CHANGE</h3><ol class="steps"><li>Pause</li><li>Check your surroundings</li><li>Regain balance</li><li>Continue only when comfortable</li><li>Seek appropriate assistance when needed</li></ol></article><article class="panel"><div class="eyebrow">Care & awareness</div><h2>A SHARED PICTURE</h2><p>STITHI can help provide a simple picture of movement patterns for discussion with a caregiver or healthcare professional.</p><p class="disclaimer">Planned next step: a caregiver SMS system for consent-based movement updates and supportive check-ins. It will be designed with privacy, clear opt-in, and appropriate escalation in mind.</p></article></section>
+<section class="section"><div class="section-heading"><div><div class="eyebrow">Research evidence</div><h2>HOW STITHI UNDERSTANDS MOVEMENT</h2></div><p>The live engine recognizes activity patterns from short windows of six-axis wearable data.</p></div><div class="panel"><div class="pipeline"><span>6-axis IMU</span><i>→</i><span>20-sample window</span><i>→</i><span>26 engineered features</span><i>→</i><span>Random Forest</span><i>→</i><span>Activity + confidence</span></div><div class="research-grid" style="margin-top:20px"><article class="research"><strong>75.31%</strong><p>Strict test accuracy for Model 1 activity recognition.</p></article><article class="research"><strong>10 Hz</strong><p>Current M5StickC Plus2 telemetry rate.</p></article><article class="research"><strong>2 sec</strong><p>Approximate live recognition window.</p></article></div><p class="disclaimer">Evaluated using a leakage-controlled chronological split on the selected activity-recognition dataset. Model 1 recognizes movement; it does not detect falls or predict fall risk.</p></div></section>
+<section class="section"><div class="section-heading"><div><div class="eyebrow">Separate evidence layer</div><h2>GAIT RESEARCH</h2></div><p>Offline research, not connected to live M5 inference.</p></div><div class="research-grid"><article class="panel research"><strong>163</strong><p>older adults studied</p></article><article class="panel research"><strong>11</strong><p>gait variables analyzed</p></article><article class="panel research"><strong>0.8124</strong><p>mean ROC-AUC for historical fall status</p></article></div><p class="disclaimer">This model investigates gait characteristics associated with previous fall history. It is not a clinically validated prediction of future falls, a diagnosis, or a live M5 output.</p></section>
+<section class="section"><div class="section-heading"><div><div class="eyebrow">SIH problem to prevention</div><h2>FROM PROBLEM TO PREVENTION</h2></div><p>Turning a sensing layer into a clearer support pathway.</p></div><div class="panel pipeline"><span>Falls</span><i>→</i><span>Fear</span><i>→</i><span>Reduced activity</span><i>→</i><span>Limited access</span><i>→</i><span>Wearable sensing</span><i>→</i><span>Prevention feedback</span><i>→</i><span>Digital access</span></div></section>
+<section class="section"><div class="section-heading"><div><div class="eyebrow">Honest roadmap</div><h2>WHAT COMES NEXT</h2></div></div><div class="roadmap"><article><h3>CURRENT</h3><p>Activity recognition, wearable sensing, baseline monitoring and prevention education.</p></article><article><h3>NEXT</h3><p>Personalized movement baseline and longitudinal monitoring.</p></article><article><h3>THEN</h3><p>Prospective real-world validation.</p></article><article><h3>FUTURE</h3><p>Clinically validated fall-risk assessment and broader prevention delivery.</p></article></div></section>
+<section class="section panel developer"><div class="section-heading"><div><div class="eyebrow">Developer / research mode</div><h2>LIVE IMU & DATA COLLECTION</h2></div><p>Technical telemetry and recording controls for demonstration and research.</p></div><div class="readings"><div class="reading"><b>ACCELERATION X / Y / Z</b><strong id="accelReading">-- / -- / --</strong></div><div class="reading"><b>GYROSCOPE X / Y / Z</b><strong id="gyroReading">-- / -- / --</strong></div><div class="reading"><b>LAST UPDATE</b><strong id="lastUpdate">--</strong></div><div class="reading"><b>ORIENTATION</b><strong id="orientation">--</strong></div><div class="reading"><b>RECORDING</b><strong id="recordStatus">Not recording</strong></div><div class="reading"><b>BASELINE DEVIATION</b><strong id="deviation">--</strong></div></div><div id="chart" class="intensity-chart"><h3>MOVEMENT INTENSITY</h3><div id="intensityBlocks" class="intensity-blocks" aria-label="Recent movement intensity"></div></div><div class="controls" style="margin-top:14px"><button class="button" onclick="startRecording('standing')">Standing</button><button class="button" onclick="startRecording('walking')">Walking</button><button class="button" onclick="startRecording('sitting')">Sitting</button><button class="button" onclick="startRecording('turning')">Turning</button><button class="button" onclick="startRecording('slow_walking')">Slow walking</button><button class="button" style="background:#b85c50" onclick="stopRecording()">Stop</button></div></section>
+<footer class="footer">STITHI is a research/proof-of-concept platform. Experimental indicators are not medical advice.</footer>
+</main>
+<script>
+const removedSections=new Set(["HOW STITHI UNDERSTANDS MOVEMENT","GAIT RESEARCH","FROM PROBLEM TO PREVENTION","WHAT COMES NEXT"]);document.querySelectorAll("section").forEach(section=>{const heading=section.querySelector("h2")?.textContent.trim();if(removedSections.has(heading))section.remove()});
+const EXERCISE_VIDEOS={mobility:{videoId:"j-WU0bNa4a0",watchUrl:"https://youtu.be/j-WU0bNa4a0"},strength:{videoId:"SqkOiCaf_p0",watchUrl:"https://youtu.be/SqkOiCaf_p0"},balance:{videoId:"e1SqcLsTIRk",watchUrl:"https://youtu.be/e1SqcLsTIRk"}};
+document.querySelector("#chart").insertAdjacentHTML("afterend","<div class=\"axis-charts\"><div class=\"axis-chart\"><h3>ACCELERATION · X / Y / Z</h3><canvas id=\"accAxes\" class=\"chart\" width=\"1000\" height=\"190\"></canvas></div><div class=\"axis-chart\"><h3>GYROSCOPE · X / Y / Z</h3><canvas id=\"gyroAxes\" class=\"chart\" width=\"1000\" height=\"190\"></canvas></div></div>");
+const history=[];let lastReceived=0;let previousAccelerationMagnitude=null;const $=id=>document.getElementById(id);function setText(id,value){$(id).textContent=value}
+function draw(){const container=$("intensityBlocks");container.innerHTML="";const recent=history.slice(-80);for(let index=0;index<80;index++){const block=document.createElement("div");block.className="intensity-block";const value=recent[index]||0;const intensity=Math.min(1,Math.abs(value)/0.8);const red=Math.round(52+190*intensity);const green=Math.round(150-92*intensity);const blue=Math.round(205-130*intensity);block.style.background=`rgb(${red},${green},${blue})`;container.appendChild(block)}}
+const axisHistory={acc:[],gyro:[]};function drawAxisChart(id,series){const canvas=$(id),ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);const values=series.flat();if(values.length<6)return;const min=Math.min(...values),max=Math.max(...values),range=max-min||1;["#ef5b62","#58a6ff","#39b85a"].forEach((color,axis)=>{ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();series[axis].forEach((value,index)=>{const x=index/(series[axis].length-1)*canvas.width,y=canvas.height-(value-min)/range*canvas.height;index?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()})}function drawAxisCharts(){drawAxisChart("accAxes",[axisHistory.acc.map(v=>v[0]),axisHistory.acc.map(v=>v[1]),axisHistory.acc.map(v=>v[2])]);drawAxisChart("gyroAxes",[axisHistory.gyro.map(v=>v[0]),axisHistory.gyro.map(v=>v[1]),axisHistory.gyro.map(v=>v[2])])}
+function setConnection(connected){const el=$("connection");el.classList.toggle("connected",connected);el.querySelector("span:last-child").textContent=connected?"Connected · M5StickC Plus2":"Waiting for M5Stick"}
+async function update(){try{const response=await fetch("/latest",{cache:"no-store"});const result=await response.json();const d=result.data||{};const age=Number(result.last_seen_seconds??999);const connected=Boolean(result.connected)&&age<3;setConnection(connected);setText("samplesValue",result.samples||0);if(!connected){setText("activityValue","Waiting");setText("confidenceValue","--");return}lastReceived=Date.now();setText("activityValue",result.prediction?.activity||"Building window");setText("confidenceValue",result.prediction?(result.prediction.confidence*100).toFixed(1)+"%":"--");setText("accelReading",[d.ax,d.ay,d.az].map(v=>Number(v).toFixed(2)).join(" / "));setText("gyroReading",[d.gx,d.gy,d.gz].map(v=>Number(v).toFixed(2)).join(" / "));axisHistory.acc.push([Number(d.ax||0),Number(d.ay||0),Number(d.az||0)]);axisHistory.gyro.push([Number(d.gx||0),Number(d.gy||0),Number(d.gz||0)]);if(axisHistory.acc.length>80){axisHistory.acc.shift();axisHistory.gyro.shift()}drawAxisCharts();setText("lastUpdate",d.received_at||"--");const stability=result.stability||{};setText("orientation",`${Number(stability.roll||0).toFixed(1)}° / ${Number(stability.pitch||0).toFixed(1)}°`);const check=Boolean(stability.unusual_movement);setText("movementState",`MOVEMENT · ${stability.movement_status||"RECEIVED"}`);setText("movementCopy",check?"Movement deviation detected — consider slowing down and checking your balance.":"Movement is within the current experimental indicator.");setText("stabilityState",`STABILITY · ${check?"CHECK":"NORMAL"}`);setText("stabilityCopy",check?"Pause and continue only when comfortable.":"No unusual movement indicator detected.");const baseline=result.baseline||{};setText("baselineState",`PERSONAL BASELINE · ${baseline.baseline_status||"NOT READY"}`);setText("baselineCopy",baseline.baseline_ready?"Current movement is compared with the recorded personal baseline.":"Start a baseline while moving normally for about 30 seconds.");setText("deviation",baseline.baseline_deviation==null?"--":Number(baseline.baseline_deviation).toFixed(2));const accelerationMagnitude=Number(d.acc_mag||0);history.push(previousAccelerationMagnitude===null?0:Math.abs(accelerationMagnitude-previousAccelerationMagnitude));previousAccelerationMagnitude=accelerationMagnitude;if(history.length>80)history.shift();draw();
 
-    <!-- HEADER -->
-    <header class="flex justify-between items-center mb-8">
-        <div>
-            <p class="text-xs font-bold text-sky-700 tracking-wider uppercase mb-1">Wearable Movement Support • SIH1580</p>
-            <h1 class="text-5xl font-extrabold text-slate-900 tracking-tight">STITHI</h1>
-            <p class="text-lg text-slate-500 mt-2">Sense. Understand. Support.</p>
-        </div>
-        <div class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-full shadow-sm">
-            <div id="conn-dot" class="w-3 h-3 rounded-full bg-red-500"></div>
-            <span id="conn-text" class="text-sm font-semibold text-slate-700">Disconnected • M5StickC Plus 2</span>
-        </div>
-    </header>
+// NEW OTAGO COMPLIANCE UI UPDATE
+const otagoCompleted = Boolean(result.otago_completed);
+const routineCard = $("routine-mobility");
+const routineTime = $("mobility-time");
+if (routineCard && routineTime && otagoCompleted) {
+    routineCard.classList.add("completed");
+    routineTime.innerHTML = `<strong style="color:var(--teal-dark)">✓ Logged: ${result.otago_completed_at}</strong>`;
+}
 
-    <!-- HERO SECTION -->
-    <div class="hero">
-        <p class="text-xs font-bold text-sky-700 tracking-wider uppercase mb-4">A Calmer Way to Understand Movement</p>
-        <h2 class="text-4xl font-bold text-slate-800 mb-6 max-w-2xl leading-tight">Small signals can support stronger everyday confidence.</h2>
-        <p class="text-slate-600 max-w-3xl mb-4 text-lg">STITHI combines a wearable sensor, movement recognition, personal baseline comparison and prevention education in one research prototype.</p>
-        <p class="text-slate-500 text-sm italic">This is an experimental movement-monitoring platform, not a medical diagnosis or future-fall prediction.</p>
-    </div>
-
-    <!-- PREVENTION PLAN -->
-    <div class="mb-8">
-        <div class="flex justify-between items-end mb-4">
-            <div>
-                <p class="text-xs font-bold text-sky-700 tracking-wider uppercase mb-1">Daily Support</p>
-                <h3 class="text-2xl font-bold text-slate-900">TODAY'S PREVENTION PLAN</h3>
-            </div>
-            <p class="text-sm text-slate-600 font-medium">Simple movement. Consistent practice. Better confidence.</p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="card flex flex-col justify-between">
-                <div>
-                    <div class="w-8 h-8 rounded-full border-2 border-dashed border-slate-300 mb-4"></div>
-                    <h4 class="font-bold text-slate-800 mb-1">MOBILITY</h4>
-                    <p class="text-sm text-slate-600">Gentle movement and warm-up.</p>
-                </div>
-                <div class="flex justify-between items-center mt-6">
-                    <span class="text-xs text-slate-500 font-bold">5-10 min</span>
-                    <button class="text-xs font-bold text-sky-700 border border-sky-700 px-3 py-1 rounded hover:bg-sky-50">Learn</button>
-                </div>
-            </div>
-            <div class="card flex flex-col justify-between border-t-4 border-t-sky-500">
-                <div>
-                    <div class="text-sky-500 text-2xl mb-2">✦</div>
-                    <h4 class="font-bold text-slate-800 mb-1">STRENGTH</h4>
-                    <p class="text-sm text-slate-600">Lower-body strengthening education.</p>
-                </div>
-                <div class="flex justify-between items-center mt-6">
-                    <span class="text-xs text-slate-500 font-bold">10-15 min</span>
-                    <button class="text-xs font-bold text-sky-700 border border-sky-700 px-3 py-1 rounded hover:bg-sky-50">Watch</button>
-                </div>
-            </div>
-            <div class="card flex flex-col justify-between border-t-4 border-t-amber-500">
-                <div>
-                    <div class="text-amber-500 text-2xl mb-2">△</div>
-                    <h4 class="font-bold text-slate-800 mb-1">BALANCE</h4>
-                    <p class="text-sm text-slate-600">Controlled balance and stable movement.</p>
-                </div>
-                <div class="flex justify-between items-center mt-6">
-                    <span class="text-xs text-slate-500 font-bold">5-10 min</span>
-                    <button class="text-xs font-bold text-sky-700 border border-sky-700 px-3 py-1 rounded hover:bg-sky-50">Watch</button>
-                </div>
-            </div>
-            <div class="card flex flex-col justify-between">
-                <div>
-                    <div class="text-slate-400 text-2xl mb-2">→</div>
-                    <h4 class="font-bold text-slate-800 mb-1">MOVEMENT</h4>
-                    <p class="text-sm text-slate-600">Safe everyday walking and mobility.</p>
-                </div>
-                <div class="flex justify-between items-center mt-6">
-                    <span class="text-xs text-slate-500 font-bold">10-20 min</span>
-                    <button class="text-xs font-bold text-sky-700 border border-sky-700 px-3 py-1 rounded hover:bg-sky-50">Learn</button>
-                </div>
-            </div>
-        </div>
-        <p class="text-xs text-slate-400 mt-3 text-center">Suggested prevention routine. Choose educational material appropriate for your abilities and discuss concerns with a qualified professional.</p>
-    </div>
-
-    <!-- PREVENTIVE FEEDBACK -->
-    <div class="mb-12">
-        <p class="text-xs font-bold text-sky-700 tracking-wider uppercase mb-1">Live Interpretation</p>
-        <h3 class="text-2xl font-bold text-slate-900 mb-4">PREVENTIVE FEEDBACK</h3>
-        
-        <div class="card grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-            <div class="px-4">
-                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Activity State</h4>
-                <p id="ui-activity" class="text-xl font-bold text-slate-800 mb-2">WAITING...</p>
-                <p class="text-sm text-slate-600">AI Context Classification</p>
-            </div>
-            <div class="px-4 pt-4 md:pt-0">
-                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Hardware Status</h4>
-                <p id="ui-state" class="text-xl font-bold text-slate-800 mb-2">--</p>
-                <p id="ui-feedback-msg" class="text-sm text-slate-600">Awaiting edge device telemetry.</p>
-            </div>
-            <div class="px-4 pt-4 md:pt-0">
-                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Dynamic Stability</h4>
-                <p id="ui-score" class="text-3xl font-extrabold text-sky-600 mb-1">--/100</p>
-                <p class="text-sm text-slate-600">Margin of Stability (MoS)</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- DEVELOPER MODE (LAG-FREE CHARTS) -->
-    <div class="pt-8 border-t-2 border-slate-200">
-        <p class="text-xs font-bold text-teal-600 tracking-wider uppercase mb-1">Developer / Research Mode</p>
-        <h3 class="text-2xl font-bold text-slate-300 mb-6">LIVE IMU & DATA COLLECTION</h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="card">
-                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Acceleration (X/Y/Z)</h4>
-                <div class="chart-container">
-                    <canvas id="accelChart"></canvas>
-                </div>
-            </div>
-            <div class="card">
-                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Gyroscope (X/Y/Z)</h4>
-                <div class="chart-container">
-                    <canvas id="gyroChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // ==========================================
-        // LAG-FREE CHART.JS CONFIGURATION
-        // ==========================================
-        const maxPoints = 50; // Keep arrays short for speed
-        
-        // High-performance common chart options
-        const commonOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false, // STOPS LAG: Disables heavy DOM animation loops
-            parsing: false,   // STOPS LAG: Skips Chart.js data parsing engine
-            normalized: true, // STOPS LAG: Tells Chart.js data is already sorted
-            elements: {
-                point: { radius: 0 }, // Removes circle rendering
-                line: { tension: 0, borderWidth: 2 } // Removes bezier curve math
-            },
-            scales: {
-                x: { display: false },
-                y: { min: -2, max: 2, grid: { color: '#f1f5f9' } }
-            },
-            plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } }
-        };
-
-        // Initialize empty raw data arrays (parsing:false requires {x, y} objects)
-        let axData = [], ayData = [], azData = [];
-        let gxData = [], gyData = [], gzData = [];
-        for (let i = 0; i < maxPoints; i++) {
-            axData.push({x: i, y: 0}); ayData.push({x: i, y: 0}); azData.push({x: i, y: 0});
-            gxData.push({x: i, y: 0}); gyData.push({x: i, y: 0}); gzData.push({x: i, y: 0});
-        }
-
-        const ctxAccel = document.getElementById('accelChart').getContext('2d');
-        const accelChart = new Chart(ctxAccel, {
-            type: 'line',
-            data: {
-                datasets: [
-                    { label: 'Acc X', borderColor: '#ef4444', data: axData },
-                    { label: 'Acc Y', borderColor: '#3b82f6', data: ayData },
-                    { label: 'Acc Z', borderColor: '#22c55e', data: azData }
-                ]
-            },
-            options: commonOptions
-        });
-
-        // Gyro options (different Y scale)
-        const gyroOptions = JSON.parse(JSON.stringify(commonOptions));
-        gyroOptions.scales.y.min = -250;
-        gyroOptions.scales.y.max = 250;
-
-        const ctxGyro = document.getElementById('gyroChart').getContext('2d');
-        const gyroChart = new Chart(ctxGyro, {
-            type: 'line',
-            data: {
-                datasets: [
-                    { label: 'Gyr X', borderColor: '#ef4444', data: gxData },
-                    { label: 'Gyr Y', borderColor: '#3b82f6', data: gyData },
-                    { label: 'Gyr Z', borderColor: '#22c55e', data: gzData }
-                ]
-            },
-            options: gyroOptions
-        });
-
-        let xCounter = maxPoints;
-
-        // ==========================================
-        // DATA FETCHING & UI UPDATE LOGIC
-        // ==========================================
-        const stateMap = {
-            0: { text: 'NORMAL', class: 'text-green-600', msg: 'Movement is within safe parameters.' },
-            1: { text: 'WARNING', class: 'text-amber-500', msg: 'Unusual movement detected. Pause and check your balance.' },
-            2: { text: 'CRITICAL', class: 'text-red-500', msg: 'Instability threshold breached.' },
-            3: { text: 'SOS ALERT', class: 'text-red-600', msg: 'Manual SOS triggered by patient.' }
-        };
-
-        async function fetchTelemetry() {
-            try {
-                // Fetch from FastAPI (Change IP back to local if testing off Render)
-                const response = await fetch('http://127.0.0.1:8000/latest');
-                const data = await response.json();
-
-                // 1. Update Connection Header
-                document.getElementById('conn-dot').className = 'w-3 h-3 rounded-full bg-green-500';
-                document.getElementById('conn-text').innerText = 'Connected • M5StickC Plus 2';
-                
-                // 2. Update Clinical UI Cards
-                document.getElementById('ui-activity').innerText = (data.activity || "UNKNOWN").toUpperCase();
-                document.getElementById('ui-score').innerText = Math.round(data.stability_score) + "/100";
-                
-                const stateInfo = stateMap[data.hardware_state] || stateMap[0];
-                const stateEl = document.getElementById('ui-state');
-                stateEl.innerText = stateInfo.text;
-                stateEl.className = 'text-xl font-bold mb-2 ' + stateInfo.class;
-                document.getElementById('ui-feedback-msg').innerText = stateInfo.msg;
-
-                // 3. Fast Array Shift for Lag-Free Charts
-                // Note: We expect FastAPI to serve the raw ax/ay/az data in /latest if you want real-time graphs.
-                // If your /latest endpoint doesn't serve raw ax/ay/az, this will plot zeros.
-                if (data.ax !== undefined) {
-                    axData.shift(); axData.push({x: xCounter, y: data.ax});
-                    ayData.shift(); ayData.push({x: xCounter, y: data.ay});
-                    azData.shift(); azData.push({x: xCounter, y: data.az});
-                    
-                    gxData.shift(); gxData.push({x: xCounter, y: data.gx});
-                    gyData.shift(); gyData.push({x: xCounter, y: data.gy});
-                    gzData.shift(); gzData.push({x: xCounter, y: data.gz});
-                    xCounter++;
-
-                    // STOPS LAG: 'none' parameter prevents animation recalibration
-                    accelChart.update('none'); 
-                    gyroChart.update('none');
-                }
-
-            } catch (error) {
-                document.getElementById('conn-dot').className = 'w-3 h-3 rounded-full bg-red-500 animate-pulse';
-                document.getElementById('conn-text').innerText = 'Connection Lost';
-            }
-        }
-
-        // Poll at exactly 10Hz to match hardware
-        setInterval(fetchTelemetry, 100);
-    </script>
+}catch(error){setConnection(false)}}
+async function startBaseline(){await fetch("/baseline/start",{method:"POST"});setText("baselineState","PERSONAL BASELINE · COLLECTING");setText("baselineCopy","Keep moving normally while STITHI records a local comparison baseline.")}
+async function startRecording(activity){const response=await fetch(`/record/start/${activity}`,{method:"POST"});const result=await response.json();setText("recordStatus",result.status==="recording"?`Recording: ${activity}`:"Already recording")}
+async function stopRecording(){await fetch("/record/stop",{method:"POST"});setText("recordStatus","Not recording")}
+document.querySelectorAll("[data-video]").forEach(frame=>{const config=EXERCISE_VIDEOS[frame.dataset.video];if(config.videoId){frame.innerHTML=`<a class="video-thumb" href="${config.watchUrl}" target="_blank" rel="noreferrer"><img src="https://i.ytimg.com/vi/${config.videoId}/hqdefault.jpg" alt="${frame.dataset.video} movement video thumbnail"><span>▶</span><small>Watch on YouTube</small></a>`}});setInterval(update,500);update();
+</script>
 </body>
 </html>
