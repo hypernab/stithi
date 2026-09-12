@@ -20,6 +20,7 @@ app = FastAPI()
 # ============================================================
 # CONFIG
 # ============================================================
+
 DATA_FOLDER = BASE_DIR / "data"
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 
@@ -30,6 +31,7 @@ PUBLIC_URL = os.getenv("STITHI_PUBLIC_URL", "http://127.0.0.1:8000")
 # ============================================================
 # LIVE DATA
 # ============================================================
+
 history = deque(maxlen=HISTORY_LENGTH)
 activity_engine = ActivityRecognitionEngine()
 stability_engine = StabilityEngine()
@@ -38,13 +40,22 @@ latest_prediction = None
 latest_stability = None
 latest_baseline = personal_baseline.status()
 
+# New Otago Compliance Trackers
 otago_completed = False
 otago_completed_at = None
 
 latest_data = {
-    "timestamp": 0, "ax": 0, "ay": 0, "az": 0,
-    "gx": 0, "gy": 0, "gz": 0, "acc_mag": 0, "gyro_mag": 0,
-    "stability": None, "received_at": ""
+    "timestamp": 0,
+    "ax": 0,
+    "ay": 0,
+    "az": 0,
+    "gx": 0,
+    "gy": 0,
+    "gz": 0,
+    "acc_mag": 0,
+    "gyro_mag": 0,
+    "stability": None,
+    "received_at": ""
 }
 
 sample_count = 0
@@ -53,6 +64,7 @@ last_received_monotonic = None
 # ============================================================
 # RECORDING & PAIRING
 # ============================================================
+
 recording = False
 current_activity = None
 csv_file = None
@@ -83,6 +95,10 @@ button { width: 100%; margin-top: 14px; padding: 14px; border: 0; border-radius:
 <script>document.getElementById("pairForm").addEventListener("submit", async event => { event.preventDefault(); const code = document.getElementById("pairCode").value.trim(); const error = document.getElementById("error"); if (!/^[0-9]{4}$/.test(code)) { error.textContent = "Enter the four-digit code shown on STITHI."; return; } const response = await fetch(`/pair/${code}`); if (response.ok) { window.location.href = `/dashboard/${code}`; } else { const body = await response.json().catch(() => ({})); error.textContent = body.detail || "Pair code not found."; } });</script>
 </body></html>
 """
+
+# ============================================================
+# DEVICE REGISTRATION & COMPLIANCE
+# ============================================================
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -120,12 +136,17 @@ def receive_compliance(data: dict):
         if session:
             active_pair_code = pair_code
             
-    if data.get("event") == "otago_start":
+    event = data.get("event")
+    if event == "otago_start":
         otago_completed = True
         otago_completed_at = datetime.now().strftime("%I:%M %p")
         return {"status": "compliance_logged", "time": otago_completed_at}
     
     return {"status": "ignored"}
+
+# ============================================================
+# RECEIVE IMU
+# ============================================================
 
 @app.post("/imu")
 def receive_imu(data: dict):
@@ -135,8 +156,9 @@ def receive_imu(data: dict):
 
     pair_code = str(data.get("pair_code", "")).strip()
     if pair_code:
-        if pairing.touch(pair_code) is None:
-            return {"status": "invalid", "detail": "Pair code expired."}
+        session = pairing.touch(pair_code)
+        if session is None:
+            return {"status": "invalid", "detail": "Pair code not found or session has expired."}
         active_pair_code = pair_code
 
     try:
@@ -158,7 +180,8 @@ def receive_imu(data: dict):
         "timestamp": data.get("timestamp", 0),
         "ax": ax, "ay": ay, "az": az,
         "gx": gx, "gy": gy, "gz": gz,
-        "acc_mag": acc_mag, "gyro_mag": gyro_mag,
+        "acc_mag": acc_mag,
+        "gyro_mag": gyro_mag,
         "stability": latest_stability,
         "received_at": datetime.now().strftime("%H:%M:%S")
     }
@@ -174,19 +197,17 @@ def receive_imu(data: dict):
 
     return {"status": "received"}
 
+# ============================================================
+# API
+# ============================================================
+
 @app.get("/latest")
 def get_latest(pair_code: str | None = None):
     if pair_code is not None and pairing.get(pair_code) is None:
         raise HTTPException(status_code=404, detail="This STITHI session has expired.")
-    
     last_seen_seconds = None if last_received_monotonic is None else round(time.monotonic() - last_received_monotonic, 3)
-    
-    # MAGIC FIX: Send the last 80 points to the client to eliminate graph lag
-    recent_history = list(history)[-80:]
-    
     return {
         "data": latest_data,
-        "recent_history": recent_history,
         "samples": sample_count,
         "prediction": latest_prediction,
         "stability": latest_stability,
@@ -204,7 +225,7 @@ def get_history():
 
 def _validate_optional_pair(pair_code: str | None) -> None:
     if pair_code is not None and pairing.get(pair_code) is None:
-        raise HTTPException(status_code=404, detail="STITHI session expired.")
+        raise HTTPException(status_code=404, detail="This STITHI session has expired.")
 
 @app.post("/baseline/start")
 def start_baseline(pair_code: str | None = None):
@@ -216,6 +237,10 @@ def start_baseline(pair_code: str | None = None):
 @app.get("/baseline/status")
 def baseline_status():
     return personal_baseline.status()
+
+# ============================================================
+# RECORDING
+# ============================================================
 
 @app.post("/record/start/{activity}")
 def start_recording(activity: str, pair_code: str | None = None):
@@ -250,12 +275,17 @@ def stop_recording(pair_code: str | None = None):
 def recording_status():
     return {"recording": recording, "activity": current_activity}
 
+# ============================================================
+# DASHBOARD
+# ============================================================
+
 def _dashboard_html(pair_code: str | None = None) -> str:
     dashboard_path = Path(__file__).resolve().parent / "dashboard.html"
     html = dashboard_path.read_text(encoding="utf-8")
-    if pair_code is None: return html
+    if pair_code is None:
+        return html
     if pairing.get(pair_code) is None:
-        raise HTTPException(status_code=404, detail="STITHI session expired.")
+        raise HTTPException(status_code=404, detail="This STITHI session has expired.")
     html = html.replace('fetch("/latest"', f'fetch("/latest?pair_code={pair_code}"')
     html = html.replace('fetch("/baseline/start"', f'fetch("/baseline/start?pair_code={pair_code}"')
     html = html.replace('`/record/start/${activity}`', f'`/record/start/${{activity}}?pair_code={pair_code}`')
