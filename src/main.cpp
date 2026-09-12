@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <time.h>
 #include <math.h>
 
 // ============================================================
@@ -34,11 +35,10 @@ DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME
 HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==
 )EOF";
 
-// AGENT ACTION: Force insecure TLS for prototype to bypass Let's Encrypt rotation issues on Render.
 const bool STITHI_ALLOW_INSECURE_TLS_DEMO = true; 
 
-const unsigned long SEND_INTERVAL = 100;    // 10 Hz telemetry
-const unsigned long SCREEN_INTERVAL = 2000; // 2 sec UI refresh
+const unsigned long SEND_INTERVAL = 250;    // 4 Hz telemetry unblocks the buttons
+const unsigned long SCREEN_INTERVAL = 2000; 
 
 unsigned long lastSend = 0;
 unsigned long lastScreen = 0;
@@ -47,32 +47,61 @@ String pairCode = "";
 String pairStatus = "WAIT";
 
 // ============================================================
-// BATTERY & UI
+// UI STATE MACHINE & OTAGO ALARM VARS
+// ============================================================
+enum UIState {
+    UI_NORMAL,
+    UI_MENU,
+    UI_SET_HOUR,
+    UI_SET_MINUTE,
+    UI_RINGING
+};
+
+UIState currentState = UI_NORMAL;
+int menuIndex = 0; 
+int tempHour = 10;
+int tempMinute = 0;
+bool holdTriggered = false; 
+
+int targetHour = 10;   
+int targetMinute = 0;
+bool complianceLogged = false;
+
+// ============================================================
+// HELPERS
 // ============================================================
 int getBatteryPercent() {
     return M5.Power.getBatteryLevel();
 }
 
-void updateScreen() {
+void updateDashboard() {
     M5.Lcd.fillScreen(BLACK);
+    
     M5.Lcd.setTextColor(WHITE);
     M5.Lcd.setTextSize(3);
-    M5.Lcd.setCursor(25, 20);
+    M5.Lcd.setCursor(25, 10);
     M5.Lcd.print("STITHI");
 
     M5.Lcd.setTextSize(2);
-    M5.Lcd.setCursor(15, 70);
-    M5.Lcd.print("WiFi: ");
-    M5.Lcd.setTextColor(WiFi.status() == WL_CONNECTED ? GREEN : RED);
-    M5.Lcd.print(WiFi.status() == WL_CONNECTED ? "OK" : "OFF");
-
+    M5.Lcd.setCursor(10, 50);
     M5.Lcd.setTextColor(WHITE);
-    M5.Lcd.setCursor(15, 92);
-    M5.Lcd.printf("BAT: %d%%", getBatteryPercent());
+    M5.Lcd.print("WIFI:");
+    M5.Lcd.setTextColor(WiFi.status() == WL_CONNECTED ? GREEN : RED);
+    M5.Lcd.print(WiFi.status() == WL_CONNECTED ? "OK " : "NO ");
+    
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.printf("BAT:%d%%", getBatteryPercent());
 
-    M5.Lcd.setCursor(15, 112);
+    M5.Lcd.setCursor(10, 80);
     M5.Lcd.print("PAIR: ");
+    M5.Lcd.setTextColor(CYAN);
     M5.Lcd.print(pairCode.length() == 4 ? pairCode : pairStatus);
+
+    M5.Lcd.setCursor(10, 110);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.print("ALARM: ");
+    M5.Lcd.setTextColor(ORANGE);
+    M5.Lcd.printf("%02d:%02d", targetHour, targetMinute);
 }
 
 bool beginHttp(HTTPClient& http, WiFiClient& plainClient, WiFiClientSecure& secureClient, const String& url) {
@@ -112,8 +141,6 @@ bool registerDevice() {
     }
 
     http.addHeader("Content-Type", "application/json");
-    
-    // AGENT ACTION: Increased timeout to 60000ms to handle Render "Cold Start" spin-ups.
     http.setTimeout(60000); 
     
     int responseCode = http.POST("{\"device_id\":\"" + deviceId + "\"}");
@@ -142,6 +169,8 @@ void setup() {
     auto cfg = M5.config();
     M5.begin(cfg);
     M5.Imu.init();
+    
+    M5.Speaker.setVolume(255); 
 
     M5.Lcd.setRotation(1);
     M5.Lcd.fillScreen(BLACK);
@@ -161,12 +190,47 @@ void setup() {
     }
 
     M5.Lcd.fillScreen(BLACK);
-    updateScreen(); 
+    
     if (WiFi.status() == WL_CONNECTED) {
-        M5.Lcd.setCursor(15, 112);
-        M5.Lcd.print("PAIRING...");
+        M5.Lcd.setCursor(10, 40);
+        M5.Lcd.print("SYNCING TIME...");
+        
+        configTime(19800, 0, "pool.ntp.org", "time.nist.gov");
+        
+        struct tm timeinfo;
+        // Wait up to 10 seconds for a robust time sync
+        if (getLocalTime(&timeinfo, 10000)) { 
+            m5::rtc_time_t rtcTime;
+            rtcTime.hours   = timeinfo.tm_hour;
+            rtcTime.minutes = timeinfo.tm_min;
+            rtcTime.seconds = timeinfo.tm_sec;
+            M5.Rtc.setTime(&rtcTime);
+            
+            m5::rtc_date_t rtcDate;
+            rtcDate.year  = timeinfo.tm_year + 1900;
+            rtcDate.month = timeinfo.tm_mon + 1;
+            rtcDate.date  = timeinfo.tm_mday;
+            M5.Rtc.setDate(&rtcDate);
+
+            // --- THE HACKATHON FIX: AUTO-SET ALARM 2 MINUTES FROM NOW ---
+            targetHour = timeinfo.tm_hour;
+            targetMinute = (timeinfo.tm_min + 2) % 60;
+            if (targetMinute < 2) { // If it rolled over the hour
+                targetHour = (targetHour + 1) % 24;
+            }
+        } else {
+            M5.Lcd.setCursor(10, 60);
+            M5.Lcd.print("SYNC FAILED.");
+            delay(2000);
+        }
+        
+        M5.Lcd.fillScreen(BLACK);
+        updateDashboard(); 
+        
+        M5.Lcd.setCursor(10, 80);
+        M5.Lcd.print("PAIR: FETCHING...");
         registerDevice();
-        updateScreen();
+        updateDashboard();
     }
 }
 
@@ -174,51 +238,246 @@ void setup() {
 // MAIN LOOP
 // ============================================================
 void loop() {
-    M5.update();
+    M5.update(); 
     unsigned long now = millis();
 
-    if (WiFi.status() == WL_CONNECTED && pairCode.length() != 4 && now - lastPairAttempt >= 5000) {
-        lastPairAttempt = now;
-        registerDevice();
-    }
-
-    float ax, ay, az, gx, gy, gz;
-    M5.Imu.getAccelData(&ax, &ay, &az);
-    M5.Imu.getGyroData(&gx, &gy, &gz);
-
-    // --- TRANSMIT TELEMETRY (PURE DATA COLLECTION) ---
-    if (now - lastSend >= SEND_INTERVAL) {
-        lastSend = now;
+    // ==========================================
+    // 1. NORMAL DASHBOARD & TELEMETRY STATE
+    // ==========================================
+    if (currentState == UI_NORMAL) {
         
-        if (WiFi.status() == WL_CONNECTED) {
-            HTTPClient http;
-            WiFiClient plainClient;
-            WiFiClientSecure secureClient;
-            String url = String(STITHI_SERVER_BASE_URL) + "/imu";
-            
-            if (!beginHttp(http, plainClient, secureClient, url)) {
-                http.end();
-                return;
+        m5::rtc_time_t rtcTime;
+        M5.Rtc.getTime(&rtcTime);
+
+        if (rtcTime.hours != targetHour) complianceLogged = false;
+
+        if (rtcTime.hours == targetHour && rtcTime.minutes == targetMinute && !complianceLogged) {
+            currentState = UI_RINGING;
+            lastScreen = 0; 
+            return;
+        }
+
+        if (M5.BtnB.isPressed()) {
+            currentState = UI_MENU;
+            menuIndex = 0;
+            lastScreen = 0; 
+            delay(200); 
+            return;
+        }
+
+        if (WiFi.status() == WL_CONNECTED && pairCode.length() != 4 && now - lastPairAttempt >= 5000) {
+            lastPairAttempt = now;
+            registerDevice();
+        }
+
+        float ax, ay, az, gx, gy, gz;
+        M5.Imu.getAccelData(&ax, &ay, &az);
+        M5.Imu.getGyroData(&gx, &gy, &gz);
+
+        if (now - lastSend >= SEND_INTERVAL) {
+            lastSend = now;
+            if (WiFi.status() == WL_CONNECTED) {
+                HTTPClient http;
+                WiFiClient plainClient;
+                WiFiClientSecure secureClient;
+                String url = String(STITHI_SERVER_BASE_URL) + "/imu";
+                
+                if (beginHttp(http, plainClient, secureClient, url)) {
+                    http.addHeader("Content-Type", "application/json");
+                    http.setTimeout(1500); 
+                    String json = "{\"timestamp\":" + String(now) + ",\"pair_code\":\"" + pairCode + "\"" +
+                                  ",\"ax\":" + String(ax, 3) + ",\"ay\":" + String(ay, 3) + ",\"az\":" + String(az, 3) + 
+                                  ",\"gx\":" + String(gx, 3) + ",\"gy\":" + String(gy, 3) + ",\"gz\":" + String(gz, 3) + "}";
+                    http.POST(json);
+                    http.end();
+                }
             }
-            
-            http.addHeader("Content-Type", "application/json");
-            
-            // AGENT ACTION: Increased timeout to 2000ms to handle internet/TLS latency overhead.
-            http.setTimeout(2000); 
-            
-            String json = "{\"timestamp\":" + String(now) + 
-                          ",\"pair_code\":\"" + pairCode + "\"" +
-                          ",\"ax\":" + String(ax, 3) + ",\"ay\":" + String(ay, 3) + ",\"az\":" + String(az, 3) + 
-                          ",\"gx\":" + String(gx, 3) + ",\"gy\":" + String(gy, 3) + ",\"gz\":" + String(gz, 3) + "}";
-            
-            http.POST(json);
-            http.end();
+        }
+
+        if (now - lastScreen >= SCREEN_INTERVAL) {
+            lastScreen = now;
+            updateDashboard();
         }
     }
 
-    // --- UI REFRESH ---
-    if (now - lastScreen >= SCREEN_INTERVAL) {
-        lastScreen = now;
-        updateScreen();
+    // ==========================================
+    // 2. ALARM RINGING STATE (LOOPING BEEP)
+    // ==========================================
+    else if (currentState == UI_RINGING) {
+        
+        if (now - lastScreen > 1000) {
+            M5.Lcd.fillScreen(RED);
+            M5.Lcd.setTextColor(WHITE);
+            M5.Lcd.setTextSize(3);
+            M5.Lcd.setCursor(30, 30);
+            M5.Lcd.print("OTAGO!");
+            M5.Lcd.setTextSize(2);
+            M5.Lcd.setCursor(15, 80);
+            M5.Lcd.print("PRESS BTN B");
+            
+            M5.Speaker.tone(1500, 400); 
+            lastScreen = now;
+        }
+
+        if (M5.BtnB.isPressed()) {
+            currentState = UI_NORMAL;
+            complianceLogged = true;
+            
+            M5.Lcd.fillScreen(GREEN);
+            M5.Lcd.setTextColor(BLACK);
+            M5.Lcd.setCursor(20, 50);
+            M5.Lcd.print("LOGGED!");
+
+            if (WiFi.status() == WL_CONNECTED) {
+                HTTPClient http;
+                WiFiClient plainClient;
+                WiFiClientSecure secureClient;
+                String url = String(STITHI_SERVER_BASE_URL) + "/compliance";
+                if (beginHttp(http, plainClient, secureClient, url)) {
+                    http.addHeader("Content-Type", "application/json");
+                    http.setTimeout(3000);
+                    String payload = "{\"device_id\":\"m5-" + WiFi.macAddress() + "\", \"event\":\"otago_start\", \"pair_code\":\"" + pairCode + "\"}";
+                    http.POST(payload);
+                    http.end();
+                }
+            }
+            delay(2000); 
+            lastScreen = 0; 
+        }
+    }
+
+    // ==========================================
+    // 3. MENU STATE
+    // ==========================================
+    else if (currentState == UI_MENU) {
+        if (now - lastScreen > 100) {
+            M5.Lcd.fillScreen(BLACK);
+            M5.Lcd.setTextSize(2);
+            M5.Lcd.setTextColor(WHITE);
+            M5.Lcd.setCursor(40, 20);
+            M5.Lcd.print("- MENU -");
+            
+            M5.Lcd.setCursor(20, 60);
+            M5.Lcd.setTextColor(menuIndex == 0 ? GREEN : WHITE);
+            M5.Lcd.print("1. ALARM");
+            
+            M5.Lcd.setCursor(20, 90);
+            M5.Lcd.setTextColor(menuIndex == 1 ? GREEN : WHITE);
+            M5.Lcd.print("2. BACK");
+            
+            lastScreen = now;
+        }
+
+        if (M5.BtnB.wasPressed()) {
+            menuIndex = (menuIndex + 1) % 2;
+            lastScreen = 0;
+        }
+
+        if (M5.BtnA.wasPressed()) {
+            if (menuIndex == 0) {
+                currentState = UI_SET_HOUR;
+                m5::rtc_time_t rtcTime;
+                M5.Rtc.getTime(&rtcTime);
+                tempHour = rtcTime.hours;
+                holdTriggered = false;
+            } else {
+                currentState = UI_NORMAL;
+            }
+            lastScreen = 0;
+        }
+    }
+
+    // ==========================================
+    // 4. SET HOUR STATE
+    // ==========================================
+    else if (currentState == UI_SET_HOUR) {
+        if (now - lastScreen > 100) {
+            M5.Lcd.fillScreen(BLACK);
+            M5.Lcd.setTextSize(2);
+            M5.Lcd.setTextColor(WHITE);
+            M5.Lcd.setCursor(50, 10);
+            M5.Lcd.print("SET HOUR");
+            
+            M5.Lcd.setTextSize(5);
+            M5.Lcd.setTextColor(ORANGE);
+            M5.Lcd.setCursor(50, 45);
+            M5.Lcd.printf("%02d", tempHour);
+            
+            M5.Lcd.setTextSize(1);
+            M5.Lcd.setTextColor(WHITE);
+            M5.Lcd.setCursor(15, 110);
+            M5.Lcd.print("Press M5: +1 | Hold 5s: Next");
+            lastScreen = now;
+        }
+
+        if (M5.BtnA.wasReleased()) {
+            if (!holdTriggered) {
+                tempHour = (tempHour + 1) % 24;
+                lastScreen = 0;
+            }
+            holdTriggered = false; 
+        }
+
+        if (M5.BtnA.pressedFor(5000) && !holdTriggered) {
+            holdTriggered = true;
+            currentState = UI_SET_MINUTE;
+            
+            m5::rtc_time_t rtcTime;
+            M5.Rtc.getTime(&rtcTime);
+            tempMinute = rtcTime.minutes;
+
+            M5.Speaker.tone(2000, 150); 
+            lastScreen = 0;
+        }
+    }
+
+    // ==========================================
+    // 5. SET MINUTE STATE
+    // ==========================================
+    else if (currentState == UI_SET_MINUTE) {
+        if (now - lastScreen > 100) {
+            M5.Lcd.fillScreen(BLACK);
+            M5.Lcd.setTextSize(2);
+            M5.Lcd.setTextColor(WHITE);
+            M5.Lcd.setCursor(40, 10);
+            M5.Lcd.print("SET MINUTE");
+            
+            M5.Lcd.setTextSize(5);
+            M5.Lcd.setTextColor(ORANGE);
+            M5.Lcd.setCursor(50, 45);
+            M5.Lcd.printf("%02d", tempMinute);
+            
+            M5.Lcd.setTextSize(1);
+            M5.Lcd.setTextColor(WHITE);
+            M5.Lcd.setCursor(15, 110);
+            M5.Lcd.print("Press M5: +1 | Hold 5s: Save");
+            lastScreen = now;
+        }
+
+        if (M5.BtnA.wasReleased()) {
+            if (!holdTriggered) {
+                tempMinute = (tempMinute + 1) % 60;
+                lastScreen = 0;
+            }
+            holdTriggered = false;
+        }
+
+        if (M5.BtnA.pressedFor(5000) && !holdTriggered) {
+            holdTriggered = true;
+            targetHour = tempHour;
+            targetMinute = tempMinute;
+            complianceLogged = false; 
+            
+            M5.Speaker.tone(2000, 200); 
+            M5.Lcd.fillScreen(GREEN);
+            M5.Lcd.setTextColor(BLACK);
+            M5.Lcd.setTextSize(3);
+            M5.Lcd.setCursor(30, 50);
+            M5.Lcd.print("SAVED!");
+            delay(1500);
+            
+            currentState = UI_NORMAL;
+            lastScreen = 0;
+        }
     }
 }
