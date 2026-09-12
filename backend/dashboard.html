@@ -43,26 +43,97 @@ body{background:#ffffff;color:var(--ink)}.panel,.routine,.video{background:#ffff
 const removedSections=new Set(["HOW STITHI UNDERSTANDS MOVEMENT","GAIT RESEARCH","FROM PROBLEM TO PREVENTION","WHAT COMES NEXT"]);document.querySelectorAll("section").forEach(section=>{const heading=section.querySelector("h2")?.textContent.trim();if(removedSections.has(heading))section.remove()});
 const EXERCISE_VIDEOS={mobility:{videoId:"j-WU0bNa4a0",watchUrl:"https://youtu.be/j-WU0bNa4a0"},strength:{videoId:"SqkOiCaf_p0",watchUrl:"https://youtu.be/SqkOiCaf_p0"},balance:{videoId:"e1SqcLsTIRk",watchUrl:"https://youtu.be/e1SqcLsTIRk"}};
 document.querySelector("#chart").insertAdjacentHTML("afterend","<div class=\"axis-charts\"><div class=\"axis-chart\"><h3>ACCELERATION · X / Y / Z</h3><canvas id=\"accAxes\" class=\"chart\" width=\"1000\" height=\"190\"></canvas></div><div class=\"axis-chart\"><h3>GYROSCOPE · X / Y / Z</h3><canvas id=\"gyroAxes\" class=\"chart\" width=\"1000\" height=\"190\"></canvas></div></div>");
-const history=[];let lastReceived=0;let previousAccelerationMagnitude=null;const $=id=>document.getElementById(id);function setText(id,value){$(id).textContent=value}
-function draw(){const container=$("intensityBlocks");container.innerHTML="";const recent=history.slice(-80);for(let index=0;index<80;index++){const block=document.createElement("div");block.className="intensity-block";const value=recent[index]||0;const intensity=Math.min(1,Math.abs(value)/0.8);const red=Math.round(52+190*intensity);const green=Math.round(150-92*intensity);const blue=Math.round(205-130*intensity);block.style.background=`rgb(${red},${green},${blue})`;container.appendChild(block)}}
-const axisHistory={acc:[],gyro:[]};function drawAxisChart(id,series){const canvas=$(id),ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);const values=series.flat();if(values.length<6)return;const min=Math.min(...values),max=Math.max(...values),range=max-min||1;["#ef5b62","#58a6ff","#39b85a"].forEach((color,axis)=>{ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();series[axis].forEach((value,index)=>{const x=index/(series[axis].length-1)*canvas.width,y=canvas.height-(value-min)/range*canvas.height;index?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()})}function drawAxisCharts(){drawAxisChart("accAxes",[axisHistory.acc.map(v=>v[0]),axisHistory.acc.map(v=>v[1]),axisHistory.acc.map(v=>v[2])]);drawAxisChart("gyroAxes",[axisHistory.gyro.map(v=>v[0]),axisHistory.gyro.map(v=>v[1]),axisHistory.gyro.map(v=>v[2])])}
-function setConnection(connected){const el=$("connection");el.classList.toggle("connected",connected);el.querySelector("span:last-child").textContent=connected?"Connected · M5StickC Plus2":"Waiting for M5Stick"}
-async function update(){try{const response=await fetch("/latest",{cache:"no-store"});const result=await response.json();const d=result.data||{};const age=Number(result.last_seen_seconds??999);const connected=Boolean(result.connected)&&age<3;setConnection(connected);setText("samplesValue",result.samples||0);if(!connected){setText("activityValue","Waiting");setText("confidenceValue","--");return}lastReceived=Date.now();setText("activityValue",result.prediction?.activity||"Building window");setText("confidenceValue",result.prediction?(result.prediction.confidence*100).toFixed(1)+"%":"--");setText("accelReading",[d.ax,d.ay,d.az].map(v=>Number(v).toFixed(2)).join(" / "));setText("gyroReading",[d.gx,d.gy,d.gz].map(v=>Number(v).toFixed(2)).join(" / "));axisHistory.acc.push([Number(d.ax||0),Number(d.ay||0),Number(d.az||0)]);axisHistory.gyro.push([Number(d.gx||0),Number(d.gy||0),Number(d.gz||0)]);if(axisHistory.acc.length>80){axisHistory.acc.shift();axisHistory.gyro.shift()}drawAxisCharts();setText("lastUpdate",d.received_at||"--");const stability=result.stability||{};setText("orientation",`${Number(stability.roll||0).toFixed(1)}° / ${Number(stability.pitch||0).toFixed(1)}°`);const check=Boolean(stability.unusual_movement);setText("movementState",`MOVEMENT · ${stability.movement_status||"RECEIVED"}`);setText("movementCopy",check?"Movement deviation detected — consider slowing down and checking your balance.":"Movement is within the current experimental indicator.");setText("stabilityState",`STABILITY · ${check?"CHECK":"NORMAL"}`);setText("stabilityCopy",check?"Pause and continue only when comfortable.":"No unusual movement indicator detected.");const baseline=result.baseline||{};setText("baselineState",`PERSONAL BASELINE · ${baseline.baseline_status||"NOT READY"}`);setText("baselineCopy",baseline.baseline_ready?"Current movement is compared with the recorded personal baseline.":"Start a baseline while moving normally for about 30 seconds.");setText("deviation",baseline.baseline_deviation==null?"--":Number(baseline.baseline_deviation).toFixed(2));const accelerationMagnitude=Number(d.acc_mag||0);history.push(previousAccelerationMagnitude===null?0:Math.abs(accelerationMagnitude-previousAccelerationMagnitude));previousAccelerationMagnitude=accelerationMagnitude;if(history.length>80)history.shift();draw();
 
-// NEW OTAGO COMPLIANCE UI UPDATE
-const otagoCompleted = Boolean(result.otago_completed);
-const routineCard = $("routine-mobility");
-const routineTime = $("mobility-time");
-if (routineCard && routineTime && otagoCompleted) {
-    routineCard.classList.add("completed");
-    routineTime.innerHTML = `<strong style="color:var(--teal-dark)">✓ Logged: ${result.otago_completed_at}</strong>`;
+const $=id=>document.getElementById(id);function setText(id,value){$(id).textContent=value}
+const axisHistory={acc:[],gyro:[]};
+
+function drawAxisChart(id,series){const canvas=$(id),ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);const values=series.flat();if(values.length<6)return;const min=Math.min(...values),max=Math.max(...values),range=max-min||1;["#ef5b62","#58a6ff","#39b85a"].forEach((color,axis)=>{ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();series[axis].forEach((value,index)=>{const x=index/(series[axis].length-1)*canvas.width,y=canvas.height-(value-min)/range*canvas.height;index?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()})}
+function drawAxisCharts(){drawAxisChart("accAxes",[axisHistory.acc.map(v=>v[0]),axisHistory.acc.map(v=>v[1]),axisHistory.acc.map(v=>v[2])]);drawAxisChart("gyroAxes",[axisHistory.gyro.map(v=>v[0]),axisHistory.gyro.map(v=>v[1]),axisHistory.gyro.map(v=>v[2])])}
+function setConnection(connected){const el=$("connection");el.classList.toggle("connected",connected);el.querySelector("span:last-child").textContent=connected?"Connected · M5StickC Plus2":"Waiting for M5Stick"}
+
+async function update(){
+  try{
+    const response=await fetch("/latest",{cache:"no-store"});
+    const result=await response.json();
+    const d=result.data||{};
+    const age=Number(result.last_seen_seconds??999);
+    const connected=Boolean(result.connected)&&age<3;
+    setConnection(connected);
+    setText("samplesValue",result.samples||0);
+    
+    if(!connected){
+      setText("activityValue","Waiting");
+      setText("confidenceValue","--");
+      return;
+    }
+
+    setText("activityValue",result.prediction?.activity||"Building window");
+    setText("confidenceValue",result.prediction?(result.prediction.confidence*100).toFixed(1)+"%":"--");
+    setText("accelReading",[d.ax,d.ay,d.az].map(v=>Number(v).toFixed(2)).join(" / "));
+    setText("gyroReading",[d.gx,d.gy,d.gz].map(v=>Number(v).toFixed(2)).join(" / "));
+    
+    // FULL ARRAY GRAPH FIX
+    const recent = result.recent_history || [];
+    axisHistory.acc = recent.map(r => [Number(r.ax||0), Number(r.ay||0), Number(r.az||0)]);
+    axisHistory.gyro = recent.map(r => [Number(r.gx||0), Number(r.gy||0), Number(r.gz||0)]);
+    drawAxisCharts();
+
+    // INTENSITY BLOCKS LOGIC (Based on full server history differences)
+    const diffs = new Array(80).fill(0);
+    for (let i = 1; i < recent.length; i++) {
+        diffs.push(Math.abs(Number(recent[i].acc_mag||0) - Number(recent[i-1].acc_mag||0)));
+    }
+    const plotDiffs = diffs.slice(-80);
+    const container=$("intensityBlocks");
+    container.innerHTML="";
+    for(let i=0; i<80; i++){
+        const block=document.createElement("div");
+        block.className="intensity-block";
+        const val=plotDiffs[i]||0;
+        const intensity=Math.min(1, val/0.8);
+        const red=Math.round(52+190*intensity);
+        const green=Math.round(150-92*intensity);
+        const blue=Math.round(205-130*intensity);
+        block.style.background=`rgb(${red},${green},${blue})`;
+        container.appendChild(block);
+    }
+
+    setText("lastUpdate",d.received_at||"--");
+    const stability=result.stability||{};
+    setText("orientation",`${Number(stability.roll||0).toFixed(1)}° / ${Number(stability.pitch||0).toFixed(1)}°`);
+    const check=Boolean(stability.unusual_movement);
+    setText("movementState",`MOVEMENT · ${stability.movement_status||"RECEIVED"}`);
+    setText("movementCopy",check?"Movement deviation detected — consider slowing down and checking your balance.":"Movement is within the current experimental indicator.");
+    setText("stabilityState",`STABILITY · ${check?"CHECK":"NORMAL"}`);
+    setText("stabilityCopy",check?"Pause and continue only when comfortable.":"No unusual movement indicator detected.");
+    
+    const baseline=result.baseline||{};
+    setText("baselineState",`PERSONAL BASELINE · ${baseline.baseline_status||"NOT READY"}`);
+    setText("baselineCopy",baseline.baseline_ready?"Current movement is compared with the recorded personal baseline.":"Start a baseline while moving normally for about 30 seconds.");
+    setText("deviation",baseline.baseline_deviation==null?"--":Number(baseline.baseline_deviation).toFixed(2));
+
+    // OTAGO COMPLIANCE UI UPDATE
+    const otagoCompleted = Boolean(result.otago_completed);
+    const routineCard = $("routine-mobility");
+    const routineTime = $("mobility-time");
+    if (routineCard && routineTime && otagoCompleted) {
+        routineCard.classList.add("completed");
+        routineTime.innerHTML = `<strong style="color:var(--teal-dark)">✓ Logged: ${result.otago_completed_at}</strong>`;
+    }
+
+  }catch(error){
+    setConnection(false);
+  }
 }
 
-}catch(error){setConnection(false)}}
 async function startBaseline(){await fetch("/baseline/start",{method:"POST"});setText("baselineState","PERSONAL BASELINE · COLLECTING");setText("baselineCopy","Keep moving normally while STITHI records a local comparison baseline.")}
 async function startRecording(activity){const response=await fetch(`/record/start/${activity}`,{method:"POST"});const result=await response.json();setText("recordStatus",result.status==="recording"?`Recording: ${activity}`:"Already recording")}
 async function stopRecording(){await fetch("/record/stop",{method:"POST"});setText("recordStatus","Not recording")}
-document.querySelectorAll("[data-video]").forEach(frame=>{const config=EXERCISE_VIDEOS[frame.dataset.video];if(config.videoId){frame.innerHTML=`<a class="video-thumb" href="${config.watchUrl}" target="_blank" rel="noreferrer"><img src="https://i.ytimg.com/vi/${config.videoId}/hqdefault.jpg" alt="${frame.dataset.video} movement video thumbnail"><span>▶</span><small>Watch on YouTube</small></a>`}});setInterval(update,500);update();
+document.querySelectorAll("[data-video]").forEach(frame=>{const config=EXERCISE_VIDEOS[frame.dataset.video];if(config.videoId){frame.innerHTML=`<a class="video-thumb" href="${config.watchUrl}" target="_blank" rel="noreferrer"><img src="https://i.ytimg.com/vi/${config.videoId}/hqdefault.jpg" alt="${frame.dataset.video} movement video thumbnail"><span>▶</span><small>Watch on YouTube</small></a>`}});
+
+// FASTER POLLING TO ELIMINATE ANY REMAINING UI STUTTER
+setInterval(update, 200);
+update();
 </script>
 </body>
 </html>
