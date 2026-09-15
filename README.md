@@ -1,3 +1,7 @@
+<div align="center">
+  <img width="800" alt="STITHI Prototype on the M5stickCplus2" src="https://github.com/user-attachments/assets/aadc1a08-4f97-4763-b752-c264a6f83312" />
+</div>
+
 # STITHI
 **Wearable Stability & Fall Prevention Monitor | Smart India Hackathon 2026 (SIH1580)**
 
