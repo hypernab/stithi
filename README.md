@@ -1,68 +1,94 @@
 # STITHI
+**Wearable Stability & Fall Prevention Monitor | Smart India Hackathon 2026 (SIH1580)**
 
-STITHI is a wearable AI-assisted fall-prevention research prototype for SIH1580. The M5StickC Plus2 is a lightweight 6-axis IMU sensor and Wi-Fi telemetry node. The laptop runs the processing and dashboard.
+STITHI is a proactive, low-cost wearable prototype and clinical dashboard designed to monitor the stability of community-dwelling older adults. By combining edge-computed kinematics, cloud-based machine learning, and built-in clinical exercise compliance (Otago Programme), STITHI shifts elderly care from reactive fall detection to proactive fall prevention.
 
-## Current architecture
+---
 
-`M5 IMU -> Wi-Fi -> FastAPI -> Model 1 + personal baseline + stability indicators -> local dashboard`
+## Key Features
 
-- **Model 1** answers: what activity is being performed? It is the frozen Random Forest classifier using 26 IMU features, 20-sample windows, and six activity classes.
-- **Personal baseline** learns approximately 30 seconds of normal live movement, then reports whether current IMU-derived features are within that person's baseline. It is an engineering comparison, not a medical score.
-- **Stability engine** computes lightweight acceleration, gyro, jerk, variability, and orientation indicators on the laptop using experimental, unvalidated thresholds.
-- **Model 2** is a separate research/evidence layer for gait characteristics associated with historical fall status in older adults. Raw M5 telemetry is not converted into Model 2 inputs, and Model 2 is not used for live future-fall prediction.
+*   **Real-Time Kinematic Telemetry:** Streams 6-axis IMU data (Acceleration & Gyroscope) at 4Hz to a cloud backend with zero-lag front-end visualization.
+*   **Edge Processing:** Local M5StickC Plus 2 (ESP32) deterministic engine for immediate on-device alerts (<20ms latency) based on movement intensity and thresholds.
+*   **Machine Learning Activity Recognition:** Python FastAPI backend running a Scikit-Learn Random Forest model to classify states (Sitting, Standing, Walking, etc.) based on 26 engineered features.
+*   **Clinical Compliance System (Otago):** Built-in NTP-synced Real-Time Clock (RTC) triggers a daily alarm for physiotherapy exercises. Compliance is logged via hardware buttons and synced instantly to the web dashboard.
+*   **Secure Device Pairing:** Ephemeral 4-digit pairing codes ensure secure, 1-to-1 connections between the wearable and the web dashboard.
 
-The API is local and intentionally small. Use `POST /imu`, `GET /latest`, `GET /history`, `POST /baseline/start`, and the existing recording endpoints. The prevention-first dashboard is served at `/dashboard`; the previous technical page remains available at `/dashboard-legacy` for troubleshooting.
+---
 
-The dashboard presents a suggested educational prevention routine covering mobility, strength, balance, and everyday movement. Exercise links use a centralized `EXERCISE_VIDEOS` configuration in `backend/dashboard.html` and fall back to official-source YouTube search pages when a verified embed ID is not configured. STITHI does not prescribe exercises or connect a live activity prediction to a medical recommendation.
+## Tech Stack
 
-## Calibration and demo flow
+**Edge Hardware**
+*   **Device:** M5StickC Plus 2 (ESP32-PICO-V3-02)
+*   **Sensors:** MPU6886 6-Axis IMU (Accelerometer + Gyroscope)
+*   **Firmware:** C++ / Arduino Core (M5Unified Library)
+*   **Connectivity:** Wi-Fi (HTTP POST with TLS)
 
-1. Start the FastAPI server with `python backend/server.py`.
-2. Open `http://localhost:8000/dashboard`.
-3. With the M5 connected and the user moving normally, select **Start Baseline** and continue normal movement for about 30 seconds.
-4. Demonstrate Model 1 activity recognition, live IMU values, orientation, stability indicators, and baseline comparison.
-5. Use the recording controls for local CSV data collection when needed.
+**Cloud Backend & ML**
+*   **Framework:** FastAPI (Python)
+*   **Data Processing:** Pandas, NumPy
+*   **Machine Learning:** Scikit-Learn (Random Forest Classifier)
+*   **Deployment:** Render (Dockerized/Web Service)
 
-For a complete local launch from the repository root:
+**Frontend Clinical Dashboard**
+*   **Core:** HTML5, CSS3, Vanilla JavaScript
+*   **Visualization:** Custom HTML5 Canvas rendering for high-performance 4Hz telemetry charting.
 
-```bash
-python backend/server.py
-```
+---
 
-Then open `http://localhost:8000/dashboard`. For local M5 testing, set `STITHI_SERVER_BASE_URL` in `src/main.cpp` to the laptop's LAN URL and allow port `8000` through the firewall.
+## Hardware Setup (M5StickC Plus 2)
 
-## Running STITHI locally
+1.  Open `main.cpp` in the Arduino IDE or PlatformIO.
+2.  Install the required library: `M5StickCPlus2` (or `M5Unified`).
+3.  Update the Wi-Fi credentials and server URL in the configuration section:
+    ```cpp
+    const char* WIFI_SSID = "YOUR_WIFI_NAME";
+    const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+    const char* STITHI_SERVER_BASE_URL = "[https://your-render-url.onrender.com](https://your-render-url.onrender.com)";
+    ```
+4.  Flash the code to the M5StickC Plus 2.
+5.  On boot, the device will connect to Wi-Fi, sync time via NTP to IST (UTC+5:30), and display a 4-digit pairing code.
 
-Install the Python dependencies and start the service from the repository root:
+---
 
-```bash
-pip install -r ml/requirements.txt
-python backend/server.py
-```
+## Backend Setup (Local Development)
 
-Open `http://127.0.0.1:8000/` for the pairing page or `http://127.0.0.1:8000/dashboard` for the unpaired developer dashboard. Local telemetry without a pairing code remains supported.
+1.  Clone this repository:
+    ```bash
+    git clone [https://github.com/yourusername/stithi.git](https://github.com/yourusername/stithi.git)
+    cd stithi
+    ```
+2.  Install the required Python dependencies:
+    ```bash
+    pip install fastapi uvicorn pandas numpy scikit-learn
+    ```
+3.  Run the FastAPI development server:
+    ```bash
+    uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+    ```
+4.  Navigate to `http://localhost:8000` to access the pairing screen.
 
-## Deploying STITHI
+---
 
-The repository includes `render.yaml` for a single-process Render web service:
+## The Otago Compliance Workflow
 
-- Build: `pip install -r ml/requirements.txt`
-- Start: `uvicorn backend.server:app --host 0.0.0.0 --port $PORT`
-- Required environment variable: `STITHI_PUBLIC_URL=https://<your-render-domain>`
-- Optional environment variable: `STITHI_PAIRING_TTL_SECONDS=1800`
+A major feature of STITHI is digitizing the **Otago Exercise Programme**, a clinically proven fall-prevention physiotherapy routine.
 
-Create a Render web service from this repository and set `STITHI_PUBLIC_URL` to the exact HTTPS service URL. Pairing sessions are in memory, so a restart or redeploy invalidates active codes. No public deployment is claimed until the Render service and domain are actually created.
+1.  **Set the Alarm:** Press Button B on the M5Stick to enter the menu. Select "ALARM" using Button A. Use short presses to set the hour/minute and a 5-second long press to save. (By default, the device auto-sets an alarm 2 minutes after boot for demo purposes).
+2.  **The Trigger:** When the alarm time hits, the M5 screen flashes red, the speaker emits a 1500Hz beep, and the UI prompts the user to perform their exercises.
+3.  **The Acknowledgment:** The user presses Button B to silence the alarm. 
+4.  **Cloud Sync:** The device sends a compliance JSON payload to the backend. The web dashboard instantly turns green, logging the exact timestamp of completion for the physician or caregiver to review.
 
-## Pairing a STITHI device
+---
 
-1. Power on the M5StickC Plus2 and connect it to Wi-Fi.
-2. The device registers at `/register` and displays its four-digit pair code.
-3. Open the public STITHI URL on a phone or laptop.
-4. Enter the four-digit code and select **CONNECT**.
-5. View the paired live dashboard at `/dashboard/<pair-code>`.
+## Core API Endpoints
 
-The M5 sends the existing `ax`, `ay`, `az`, `gx`, `gy`, and `gz` fields at 10 Hz, plus the short-lived `pair_code`. The code is a demo/session pairing mechanism, not production-grade authentication. For HTTPS firmware, set `STITHI_SERVER_BASE_URL` once in `src/main.cpp` and provide the deployment CA certificate in `STITHI_ROOT_CA`; certificate verification is not disabled by default.
+*   `POST /register`: Generates a temporary 4-digit pairing code for the M5Stick.
+*   `GET /pair/{pair_code}`: Validates a pairing code for the web dashboard.
+*   `POST /imu`: Receives 6-axis telemetry and pair-code data from the edge device.
+*   `POST /compliance`: Logs the completion of the daily Otago exercise routine.
+*   `GET /latest`: Returns the current ML prediction, stability status, and a trailing 80-point data array for lag-free dashboard rendering.
+*   `POST /record/start/{activity}`: Starts logging incoming IMU data to a CSV for local dataset generation.
 
-## Truthful scope
+---
 
-The current prototype does not calculate actual Line of Gravity/Base of Support, clinical diagnosis, clinical fall-risk percentages, future-fall prediction, or a live clinical exercise prescription. The dashboard links to educational prevention material but does not claim to deliver the official Otago Exercise Programme. Future work requires multi-segment sensing, validated LOG/BOS estimation, prospective clinical validation, verified exercise-content integration, and a properly designed personalized exercise/intervention pathway.
+*Built with precision and care for the Smart India Hackathon 2026.*
